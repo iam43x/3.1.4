@@ -1,11 +1,51 @@
-
-
-$(function () {
+$(async function () {
 
     var $tableUsers = $('#table-users');
+    var $allRoles=[];
 
-    var $newUserUsername = $('#new-user-username');
-    var $newUserPass = $('#new-user-password');
+    async function getAllRoles() {
+         $.ajax({
+                type: 'GET',
+                url: '/rest/roles',
+                dataType: 'json',
+                success: function (roles) {
+                    $allRoles=roles;
+                },
+                error: function () {
+                    alert('error get all users role')
+                }
+            });
+
+        };
+
+    function addEditRole(user) {
+        var block = '';
+        $.each($allRoles, function (i, role) {
+            block += `<p><input ${user.authorities.includes(role) ? 'checked' : ''} 
+                        type="checkbox" name="edit-role"  value="${role}">${role}</input></p>`;
+        });
+        return block;
+    };
+
+    function addNewRole() {
+        var block = '';
+
+        $.each($allRoles, function (i, role) {
+            block += `<input type="checkbox" name="new-role" value="${role}"> ${role} </input>`;
+        });
+        console.log(block)
+        return block;
+    };
+
+    function addDeleteRole(user) {
+        var block = '';
+        $.each($allRoles, function (i, role) {
+            block += `<p><input disabled ${user.authorities.includes(role) ? 'checked ' : ''} type="checkbox" 
+                                        name="delete-role"  value="${role}">${role}</input></p>`;
+        });
+        return block;
+    };
+
 
     function addUser(user) {
         $tableUsers.append('' + '<tr id="' + user.id + '">\n' +
@@ -40,11 +80,8 @@ $(function () {
             '                                                                <p><input id="edit-password-' + user.id + '" type="password"\n' +
             '                                                                          name="edit-password"\n' +
             '                                                                          value="' + user.password + '"></p>\n' +
-            '                                                                <p><label for="edit-role-' + user.id + '">Role:</label></p>\n' +
-            '                                                                <p><input id="edit-role-' + user.id + '" type="checkbox" name="edit-role"\n' +
-            '                                                                          value="ADMIN">Admin</input></p>\n' +
-            '                                                                <p><input type="checkbox" name="edit-role" value="USER"\n' +
-            '                                                                          checked>User</input></p>\n' +
+            '                                                                <p><label>Role:</label></p>\n'
+            + addEditRole(user) +
             '                                                                <div class="float-right">\n' +
             '                                                                    <button data-dismiss="modal"\n' +
             '                                                                            class="btn btn-secondary">Close\n' +
@@ -79,20 +116,15 @@ $(function () {
             '                                                                <p><input disabled="disabled" id="delete-id-' + user.id + '" name="id"\n' +
             '                                                                          value="' + user.id + '"></p>\n' +
             '                                                                <p><label for="delete-username">Email:</label></p>\n' +
-            '                                                                <p><input disabled="disabled" id="delete-username-' + user.id + '"\n' +
+            '                                                                <p><input disabled id="delete-username-' + user.id + '"\n' +
             '                                                                          type="text" name="username"\n' +
             '                                                                          value="' + user.username + '"></p>\n' +
             '                                                                <p><label for="delete-password-' + user.id + '">Password:</label></p>\n' +
-            '                                                                <p><input disabled="disabled" id="delete-password-' + user.id + '"\n' +
+            '                                                                <p><input disabled id="delete-password-' + user.id + '"\n' +
             '                                                                          type="password" name="password"\n' +
             '                                                                          value="' + user.password + '"></p>\n' +
-            '                                                                <p><label for="delete-role-' + user.id + '">Role:</label></p>\n' +
-            '                                                                <p><input disabled="disabled" id="delete-role-' + user.id + '"\n' +
-            '                                                                          type="checkbox" name="role" value="ADMIN">Admin</input>\n' +
-            '                                                                </p>\n' +
-            '                                                                <p><input disabled="disabled" type="checkbox"\n' +
-            '                                                                          name="role" value="USER" checked>User</input>\n' +
-            '                                                                </p>\n' +
+            '                                                                <p><label>Role:</label></p>\n'
+            + addDeleteRole(user) +
             '                                                                <div class="float-right">\n' +
             '                                                                    <button data-dismiss="modal"\n' +
             '                                                                            class="btn btn-secondary">Close\n' +
@@ -109,27 +141,28 @@ $(function () {
             '                                        </td>\n' +
             '                                    </tr>');
     };
+
     function userInfo() {
         $.ajax({
             type: 'GET',
             url: '/rest/users/' + $('#hello-title').attr('data'),
             success: function (user) {
-                $('#hello-title').append('' +
-                    '<p>Привет <strong>' + user.username + '</strong>, вы вошли как <strong>' + user.authorities + ' </strong>.</p>');
-                $('#user-info').append('<tbody>\n' +
-                    '                            <tr class="table-active">\n' +
-                    '                                <td>' + user.id + '</td>\n' +
-                    '                                <td>' + user.username + '</td>\n' +
-                    '                                <td>' + user.password + '</td>\n' +
-                    '                                <td>' + user.authorities + '</td>\n' +
-                    '                            </tr>\n' +
-                    '                            </tbody>')
+                $('#hello-title').append(`<p>Привет <strong>${user.username}</strong>, вы вошли как <strong>${user.authorities} </strong>.</p>`);
+                $(`#user-info`).append(`<tbody>
+                            <tr class="table-active">
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.password}</td>
+                                <td>${user.authorities}</td>
+                            </tr>
+                            </tbody>`)
             },
             error: function () {
                 alert('error get user auth')
             }
         });
     };
+
     function getAllUsers() {
         $.ajax({
             type: 'GET',
@@ -145,39 +178,62 @@ $(function () {
         });
     };
 
+    function newUserTable() {
+        $('#new-user-table').append(`<thead><tr>
+                                <td>
+                                    <form style="text-align: center">
+                                        <label for="new-user-username">Логин:</label>
+                                        <input id="new-user-username" type="text" name="username">
+                                        <label for="new-user-password">Пароль:</label>
+                                        <input id="new-user-password" type="password" name="password">
+                                        <label>Права:</label> 
+                                         ${addNewRole()}    
+                                        <p><button type="button" id="new-user-btn" class="btn btn-success"> Add new User </button></p>
+                                    </form>
+                                </td>
+                            </tr></thead>`);
+    };
+
+    await getAllRoles();
     userInfo();
     getAllUsers();
 
+    $('#new-user-table').on('click','#new-user-btn',  function (){
 
-    $('#new-user-btn').on('click', function () {
+        var $username=$('#new-user-username');
+        var $password=$('#new-user-password');
         var $newUserRole = [];
-        $('#new-user input:checkbox:checked').each(function () {
+        $('#new-user-table input:checkbox:checked').each(function (){
             $newUserRole.push(this.value)
-        })
+        });
 
         var user = {
-            username: $newUserUsername.val(),
-            password: $newUserPass.val(),
+            username: $username.val(),
+            password: $password.val(),
             authorities: $newUserRole,
         };
+        console.log(user);
+        $('#new-user-tab').removeClass('show active');
+        $('#new-user-link').removeClass('active');
+        $('#all-users-link').addClass('active');
+        $('#all-users-tab').addClass('show active');
+
         $.ajax({
             type: 'POST',
             url: '/rest/users',
             contentType: 'application/JSON; charset=utf-8',
             data: JSON.stringify(user),
             dataType: 'json',
-            success: function (newUser) {
+            success: newUser=>{
                 addUser(newUser);
-                $('#message').append('add New user ' + newUser.username);
             },
-            error: function () {
+            error:()=>{
                 alert('error save user');
             }
         });
-
     });
 
-    $tableUsers.delegate('.delete-user', 'click', function () {
+    $tableUsers.delegate('.delete-user', 'click',  function (){
 
         var $tr = $(this).closest('tr')
 
@@ -193,7 +249,7 @@ $(function () {
 
     });
 
-    $tableUsers.delegate('.edit-user', 'click', function () {
+    $tableUsers.delegate('.edit-user', 'click', function(){
 
         var $tr = $(this).closest('tr');
         var $editRole = [];
@@ -221,8 +277,7 @@ $(function () {
                 alert('error edit user');
             }
         });
-
-
     });
 
+    setTimeout(()=>newUserTable(),1500);
 });

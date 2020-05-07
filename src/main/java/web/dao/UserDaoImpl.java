@@ -51,14 +51,12 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User getUserByUsername(String username) {
-        List<User> users = getAllUsers();
-        for (User user : users) {
-            if (user.getUsername().equals(username)) {
-                return user;
-            }
-        }
-        throw new UsernameNotFoundException("User Not found");
+        RestTemplate restTemplate = new RestTemplate();
+        User user = restTemplate.exchange("http://localhost:8080/rest/user", HttpMethod.POST,
+                new HttpEntity<>(username, getHeaders()), User.class).getBody();
+       return user;
     }
+
 
     @Override
     public User getUserById(Long id) {
